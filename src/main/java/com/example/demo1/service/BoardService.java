@@ -15,7 +15,6 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-
 public class BoardService {
     private final BoardRepository boardRepository;
     private final S3Service s3Service;
@@ -41,11 +40,6 @@ public class BoardService {
         boardRepository.save(board);
     }
 
-    @Transactional
-    public void deleteBoard(Long boardId) {
-        boardRepository.deleteByBoardId(boardId);
-    }
-
     // 이미지 포함 게시글 생성
     @Transactional
     public void ImageBoard(BoardDTO request) throws IOException {
@@ -61,4 +55,25 @@ public class BoardService {
         boardRepository.save(board);
     }
 
+    @Transactional
+    public String getImageUrl(Long boardId) {
+        Board board = boardRepository.findByBoardId(boardId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 게시물입니다."));
+
+        String fileName = board.getImage();
+        return s3Service.getImageUrl(fileName);
+    }
+
+    @Transactional
+    public void deleteBoard(Long boardId) {
+        Board board = boardRepository.findByBoardId(boardId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 게시물입니다."));
+
+        if (board.getImage() != null && !board.getImage().isEmpty()) {
+            s3Service.deleteFile(board.getImage());
+        }
+
+        boardRepository.deleteByBoardId(boardId);
+    }
 }
+

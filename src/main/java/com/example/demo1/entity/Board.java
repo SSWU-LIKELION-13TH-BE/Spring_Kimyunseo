@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 
 @Getter
@@ -12,12 +13,12 @@ import java.time.LocalDate;
 @Entity
 @Builder
 @AllArgsConstructor
-@Table(name = "board")
+@Table(name="board")
 public class Board {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "board_id", unique = true, nullable = false)
+    @Column(name="board_id", unique = true, nullable = false)
     private Long boardId;
 
     @Column(length = 15, nullable = false)
@@ -31,10 +32,11 @@ public class Board {
 
     private LocalDate postDate;
 
-    @PrePersist
-    protected void onCreate() { this.postDate = LocalDate.now(); }
-
     @Column
     private String image;
 
+    @PrePersist
+    protected void onCreate() {
+        this.postDate = LocalDate.now();
+    }
 }

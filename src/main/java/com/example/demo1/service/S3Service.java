@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -41,5 +42,21 @@ public class S3Service {
         GetUrlRequest request = GetUrlRequest.builder().bucket(bucket).key(fileName).build(); // s3에서 주소를 받아오기 위해 정보 담은 GetUrlRequest 객체 만들기
 
         return s3Client.utilities().getUrl(request).toString(); // 업로드된 파일 주소 리턴
+    }
+
+    public String getImageUrl(String fileName) {
+        GetUrlRequest request = GetUrlRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .build();
+        return s3Client.utilities().getUrl(request).toString();
+    }
+
+    public void deleteFile(String fileName) {
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .build();
+        s3Client.deleteObject(deleteObjectRequest);
     }
 }
