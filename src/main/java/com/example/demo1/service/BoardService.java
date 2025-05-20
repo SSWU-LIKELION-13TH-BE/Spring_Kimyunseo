@@ -4,24 +4,28 @@ import com.example.demo1.dto.BoardDTO;
 import com.example.demo1.entity.Board;
 import com.example.demo1.repository.BoardRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
+
 public class BoardService {
     private final BoardRepository boardRepository;
-
-    public BoardService(BoardRepository boardRepository) {
-        this.boardRepository = boardRepository;
-    }
+    private final S3Service s3Service;
 
     public Optional<Board> getBoard(Long boardId) {
         return boardRepository.findByBoardId(boardId);
     }
 
-    public void postBoard(Board board) {
-        boardRepository.save(board);
+    public Board postBoard(Board board) {
+        return boardRepository.save(board);
     }
 
     @Transactional
@@ -33,6 +37,7 @@ public class BoardService {
                 .writer(boardDTO.getWriter())
                 .postDate(LocalDate.now())
                 .build();
+
         boardRepository.save(board);
     }
 
@@ -40,4 +45,20 @@ public class BoardService {
     public void deleteBoard(Long boardId) {
         boardRepository.deleteByBoardId(boardId);
     }
+
+    // 이미지 포함 게시글 생성
+    @Transactional
+    public void ImageBoard(BoardDTO request) throws IOException {
+        String savedImageURI = s3Service.upload(request.getImage());
+
+        Board board = Board.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .writer(request.getWriter())
+                .image(savedImageURI)
+                .build();
+
+        boardRepository.save(board);
+    }
+
 }
