@@ -1,9 +1,9 @@
 package com.example.demo1.service.user;
 
 import com.example.demo1.dto.user.request.UserLoginRequestDto;
+import com.example.demo1.dto.user.request.UserPasswordChangeRequestDto;
 import com.example.demo1.dto.user.request.UserSignupRequestDto;
 import com.example.demo1.dto.user.response.UserLoginResponseDto;
-
 import com.example.demo1.entity.user.User;
 import com.example.demo1.repository.user.UserRepository;
 import com.example.demo1.security.JwtTokenProvider;
@@ -20,7 +20,9 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -57,5 +59,22 @@ public class UserService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities("USER")
                 .build();
+    }
+
+    public void changePassword(String userId, UserPasswordChangeRequestDto dto) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            throw new RuntimeException("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(dto.getNewPassword());
+        user.setPassword(encodedNewPassword);
+        userRepository.save(user);
     }
 }

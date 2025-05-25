@@ -1,6 +1,7 @@
 package com.example.demo1.controller.user;
 
 import com.example.demo1.dto.user.request.UserLoginRequestDto;
+import com.example.demo1.dto.user.request.UserPasswordChangeRequestDto;
 import com.example.demo1.dto.user.request.UserSignupRequestDto;
 import com.example.demo1.dto.user.response.UserLoginResponseDto;
 import com.example.demo1.entity.user.User;
@@ -18,7 +19,7 @@ public class UserController {
     private final UserService userService;
     private final UserRepository userRepository;
 
-    // ✅ UserRepository도 생성자에 주입
+    //  UserRepository도 생성자에 주입
     public UserController(UserService userService, UserRepository userRepository) {
         this.userService = userService;
         this.userRepository = userRepository;
@@ -36,7 +37,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // ✅ 사용자 정보 조회 API
+    // 사용자 정보 조회 API
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByUserId(userDetails.getUsername())
@@ -44,6 +45,14 @@ public class UserController {
         return ResponseEntity.ok(new UserDto(user.getUserId(), user.getName(), user.getProfileImage()));
     }
 
-    // ✅ 사용자 정보 응답 DTO
+    // 사용자 정보 응답 DTO
     public record UserDto(String userId, String name, String profileImage) {}
+
+    // 비밀번호 변경 API
+    @PatchMapping("/password")
+    public ResponseEntity<String> changePassword(@AuthenticationPrincipal UserDetails userDetails,
+                                                 @RequestBody UserPasswordChangeRequestDto dto) {
+        userService.changePassword(userDetails.getUsername(), dto);
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+    }
 }
