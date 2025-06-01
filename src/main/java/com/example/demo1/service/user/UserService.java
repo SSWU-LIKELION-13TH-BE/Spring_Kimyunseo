@@ -7,10 +7,13 @@ import com.example.demo1.dto.user.response.UserLoginResponseDto;
 import com.example.demo1.entity.user.User;
 import com.example.demo1.repository.user.UserRepository;
 import com.example.demo1.security.JwtTokenProvider;
+import com.example.demo1.validation.apiPayload.exception.GeneralException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.example.demo1.dto.user.response.UserInfoResponseDto;
+import com.example.demo1.validation.apiPayload.code.ErrorStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,6 +32,11 @@ public class UserService implements UserDetailsService {
     }
 
     public void signup(UserSignupRequestDto requestDto) {
+
+        if (userRepository.existsByUserId(requestDto.getUserId())) {
+            throw new GeneralException(ErrorStatus.USERNAME_ALREADY_EXISTS);
+        }
+
         User user = new User();
         user.setUserId(requestDto.getUserId());
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
@@ -49,6 +57,36 @@ public class UserService implements UserDetailsService {
         return new UserLoginResponseDto(user.getUserId(), token);
     }
 
+    public UserInfoResponseDto getUserInfo(String userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("입력하신 Id의 사용자가 존재하지 않습니다: " + userId));
+        return new UserInfoResponseDto(
+                user.getUserId(),
+                user.getName(),
+                user.getProfileImage()
+        );
+    }
+
+    // 비밀번호 변경
+    public void changePassword(String userId, UserPasswordChangeRequestDto requestDto) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("입력하신 Id의 사용자가 존재하지 않습니다: " + userId));
+
+
+        if (!passwordEncoder.matches(requestDto.getCurrentPassword(), user.getPassword())) {
+            throw new GeneralException(ErrorStatus.PASSWORD_MISMATCH);
+        }
+
+
+        if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
+            throw new GeneralException(ErrorStatus.PASSWORD_CONFIRM_MISMATCH);
+        }
+
+
+        user.setPassword(passwordEncoder.encode(requestDto.getNewPassword()));
+        userRepository.save(user);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
         User user = userRepository.findByUserId(userId)
@@ -59,22 +97,5 @@ public class UserService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities("USER")
                 .build();
-    }
-
-    public void changePassword(String userId, UserPasswordChangeRequestDto dto) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
-        }
-
-        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
-            throw new RuntimeException("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
-        }
-
-        String encodedNewPassword = passwordEncoder.encode(dto.getNewPassword());
-        user.setPassword(encodedNewPassword);
-        userRepository.save(user);
     }
 }
